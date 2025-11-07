@@ -1,34 +1,81 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
-# Título de la app
-st.title("📊 Análisis de datos con Streamlit")
+# --- CONFIGURACIÓN GENERAL ---
+st.set_page_config(
+    page_title="Análisis de Datos",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Cargar datos
-st.subheader("1️⃣ Cargar archivo CSV")
-uploaded_file = st.file_uploader("Sube un archivo CSV", type=["csv"])
+# --- ESTILO PERSONALIZADO ---
+st.markdown("""
+    <style>
+    .main {
+        background-color: #0E1117;
+        color: white;
+        font-family: 'Segoe UI';
+    }
+    .stMetric {
+        background-color: #262730;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    st.success("✅ Archivo cargado correctamente")
+# --- TÍTULO PRINCIPAL ---
+st.title("📊 Dashboard de Análisis de Datos")
 
-    # Mostrar primeras filas
-    st.subheader("2️⃣ Vista previa del dataset")
+# --- CARGA DE ARCHIVO ---
+st.sidebar.header("📁 Cargar archivo CSV")
+archivo = st.sidebar.file_uploader("Sube un archivo CSV", type=["csv"])
+
+if archivo is not None:
+    df = pd.read_csv(archivo)
+    st.sidebar.success("✅ Archivo cargado correctamente")
+
+    # --- VISTA PREVIA ---
+    st.subheader("👀 Vista previa del dataset")
     st.dataframe(df.head())
 
-    # Seleccionar columna numérica
-    st.subheader("3️⃣ Selecciona una columna numérica para graficar")
-    numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-    if len(numeric_cols) > 0:
-        selected_col = st.selectbox("Elige una columna", numeric_cols)
+    # --- SELECCIÓN DE COLUMNA ---
+    columnas_numericas = df.select_dtypes(include=np.number).columns.tolist()
+    if columnas_numericas:
+        columna = st.selectbox("Selecciona una columna numérica para analizar", columnas_numericas)
 
-        # Graficar
-        st.subheader(f"4️⃣ Histograma de {selected_col}")
-        fig, ax = plt.subplots()
-        ax.hist(df[selected_col].dropna(), bins=20, color="skyblue", edgecolor="black")
+        # --- SLIDER DE RANGO ---
+        min_val, max_val = float(df[columna].min()), float(df[columna].max())
+        rango = st.slider(
+            f"Filtra los valores de {columna}",
+            min_val,
+            max_val,
+            (min_val, max_val)
+        )
+
+        df_filtrado = df[(df[columna] >= rango[0]) & (df[columna] <= rango[1])]
+
+        # --- KPIs / MÉTRICAS ---
+        st.markdown("### 📈 Indicadores Clave (KPI)")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Valor mínimo", f"{df_filtrado[columna].min():.2f}")
+        col2.metric("Promedio", f"{df_filtrado[columna].mean():.2f}")
+        col3.metric("Valor máximo", f"{df_filtrado[columna].max():.2f}")
+
+        # --- GRÁFICO ---
+        st.markdown("### 📊 Distribución de valores")
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.hist(df_filtrado[columna], bins=12, color="#29B5E8", edgecolor="white")
+        ax.set_xlabel(columna)
+        ax.set_ylabel("Frecuencia")
+        ax.set_facecolor("#0E1117")
         st.pyplot(fig)
+
     else:
-        st.warning("No hay columnas numéricas para graficar.")
+        st.warning("⚠️ No hay columnas numéricas para graficar.")
 else:
-    st.info("👆 Sube un archivo CSV para empezar el análisis.")
+    st.info("⬆️ Sube un archivo CSV desde la barra lateral para comenzar.")
