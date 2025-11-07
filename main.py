@@ -2,35 +2,33 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-st.title("Simple Data Dashboard")
+# Título de la app
+st.title("📊 Análisis de datos con Streamlit")
 
-uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+# Cargar datos
+st.subheader("1️⃣ Cargar archivo CSV")
+uploaded_file = st.file_uploader("Sube un archivo CSV", type=["csv"])
 
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
+    st.success("✅ Archivo cargado correctamente")
 
-    st.subheader("Data Preview")
-    st.write(df.head())
+    # Mostrar primeras filas
+    st.subheader("2️⃣ Vista previa del dataset")
+    st.dataframe(df.head())
 
-    st.subheader("Data Summary")
-    st.write(df.describe())
+    # Seleccionar columna numérica
+    st.subheader("3️⃣ Selecciona una columna numérica para graficar")
+    numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+    if len(numeric_cols) > 0:
+        selected_col = st.selectbox("Elige una columna", numeric_cols)
 
-    st.subheader("Filter Data")
-    columns = df.columns.tolist()
-    selected_column = st.selectbox("Select column to filter by", columns)
-    unique_values = df[selected_column].unique()
-    selected_value = st.selectbox("Select value", unique_values)
-
-    filtered_df = df[df[selected_column] == selected_value]
-    st.write(filtered_df)
-
-    st.subheader("Plot Data")
-    x_column = st.selectbox("Select x-axis column", columns)
-    y_column = st.selectbox("Select y-axis column", columns)
-
-    if st.button("Generate Plot"):
-        st.line_chart(filtered_df.set_index(x_column)[y_column])
+        # Graficar
+        st.subheader(f"4️⃣ Histograma de {selected_col}")
+        fig, ax = plt.subplots()
+        ax.hist(df[selected_col].dropna(), bins=20, color="skyblue", edgecolor="black")
+        st.pyplot(fig)
+    else:
+        st.warning("No hay columnas numéricas para graficar.")
 else:
-    with st.spinner("Waiting for file upload..."):
-        st.empty()
-   #  st.write("Waiting on file upload...")
+    st.info("👆 Sube un archivo CSV para empezar el análisis.")
